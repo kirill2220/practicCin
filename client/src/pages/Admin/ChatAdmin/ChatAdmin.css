@@ -1,0 +1,54 @@
+#indicator {
+  padding: 5px;
+}
+#status {
+  width: 8px;
+  height: 8px;
+  background-color: red;
+  display: inline-block;
+  border-radius: 50%;
+}
+#chat {
+  display: flex;
+  grid-auto-columns: 1fr 1fr;
+  grid-template-areas: "users interface";
+  height: 350px;
+  background-color: #fff;
+  bottom: 10px;
+  right: 10px;
+}
+#interface {
+  grid-area: interface;
+}
+#users {
+  grid-area: users;
+  padding: 10px;
+  background-color: #fff;
+}
+#messages {
+  top: 5px;
+  padding: 5px;
+  margin: 5px;
+  height: 200px;
+  background-color: #f4f6fa;
+  overflow: scroll;
+}
+#input {
+  width: 400px;
+  margin: 5px;
+}
+#send {
+  width: 400px;
+  margin-left: 5px;
+  height: 38px;
+  margin-top: 4px;
+}
+
+#control-chat {
+  display: flex;
+}
+.users {
+  width: 150px;
+  margin: 10px;
+  background-color: white;
+}

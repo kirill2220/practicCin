@@ -1,0 +1,229 @@
+drop  table Favorite;
+drop  table Ticket;
+drop  table Place;
+drop  table Session;
+drop  table token;
+drop  table Users;
+drop  table Hall;
+drop  table Film;
+drop  table Genre;
+drop  table TypePlace;
+drop  table AUDITT;
+
+select * from Hall;
+select * from typeplace;
+select * from place;
+select * from Session;
+select * from ticket;
+select * from Film;
+delete from Film;
+delete from Hall;
+delete from typeplace;
+delete from Session;
+
+insert into ticket(idsession,idplace,idusers) values(9,22,1)
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION CheckSession() 
+RETURNS int 
+LANGUAGE plpgsql 
+AS $$
+DECLARE
+    IdSession INTEGER;
+BEGIN
+    FOR IdSession IN SELECT ID FROM Session WHERE dateSession < CURRENT_DATE OR (dateSession = CURRENT_DATE AND timeSession <= CURRENT_TIME)
+    LOOP
+        UPDATE Session SET status = 'Disactive' WHERE ID = IdSession;
+    END LOOP;
+	return IdSession;
+END;
+$$;
+
+SELECT CheckSession();
+
+
+
+CREATE OR REPLACE FUNCTION ticket_before_insert_rows()
+RETURNS trigger AS
+$$
+DECLARE
+    Place int;
+    Filename varchar(100);
+    Filmid int;
+    SessionDate date;
+BEGIN
+    SELECT Place.place INTO Place FROM Place WHERE Place.ID = NEW.IDPlace;
+    SELECT dateSession, IDFilm INTO SessionDate, Filmid FROM Session WHERE Session.ID = NEW.IDSession;
+    SELECT name INTO Filename FROM Film WHERE Film.ID = Filmid;
+
+    INSERT INTO AUDITT (OperationType, filmname, date, datenow, place, users)
+    SELECT 'Покупка билета', Filename, SessionDate, NOW(), Place, NEW.IDUsers;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER Ticket_BEFORE_INSERT_ROWS
+AFTER INSERT ON ticket
+FOR EACH ROW
+EXECUTE FUNCTION ticket_before_insert_rows();
+insert into ticket(idsession,idplace,idusers) values(9,28,1);
+select* from AUDITT
+CREATE OR REPLACE FUNCTION audit_ticket() RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO AUDITT(OperationType, filmname, date, datenow, place, users)
+    SELECT 'Возврат билета', f.name, s.dateSession, NOW(), p.place, OLD.IDUsers
+    FROM Place p
+    JOIN Session s ON s.ID = OLD.IDSession
+    JOIN Film f ON f.ID = s.IDFilm
+    WHERE p.ID = OLD.IDPlace;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER Ticket_BEFORE_DELETE_ROWS
+AFTER DELETE ON Ticket
+FOR EACH ROW
+EXECUTE FUNCTION audit_ticket();
+
+
+
+insert into ticket(idsession,idplace,idusers) values(9,28,1);
+delete from ticket;
+select * from auditt;
+select * from users;
+drop function Ticket_BEFORE_DELETE_ROWS
+DROP TRIGGER Ticket_BEFORE_DELETE_ROWS ON Ticket;
+--------------------------------------------------------------------------------------------------------
+create table Users
+(
+ID int GENERATED ALWAYS AS IDENTITY   PRIMARY KEY,
+login varchar(50),--логин
+password varchar(255),--пароль
+name varchar(50) not null,-- имя
+email varchar(50) not null,-- эмаил
+status varchar(50) DEFAULT 'User'--статус
+);
+create table Token
+(
+ID int GENERATED ALWAYS AS IDENTITY   PRIMARY KEY,
+IDUsers int not null,--идентификатор доступпа
+token varchar(500) not null,
+foreign key (IDUsers )
+  references Users(ID) on delete cascade
+);
+create table TypePlace
+(
+ID int  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+cost_vip int not null,--тип
+cost_normal int not null--стоимость
+);
+
+
+
+--table HAll
+create Table Hall
+(
+ID int  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+name varchar(50) not null,
+count_rows int not null,--зал
+count_place int not null,--зал
+Id_type_Plase int not null,
+foreign key (Id_type_Plase)
+  references TypePlace(ID) on delete cascade
+);
+
+--table Place
+create table Place
+(
+ID int  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+place int not null,--номер места
+IDHall int not null,--зал
+foreign key (IDHall)
+  references Hall(ID) on delete cascade
+);
+
+--table Genre
+create table Genre
+(
+ID int  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+name varchar(50)not null--жанр
+);
+
+insert into Genre(name) values('genre');
+
+select * from film;
+select * from genre;
+delete from film;
+delete from genre;
+--table Film
+create table Film
+(
+ID int GENERATED ALWAYS AS IDENTITY   PRIMARY KEY,
+name varchar(50) not null,--название
+year int not null,--год выпуска
+duration TIME not null,--продолжительность
+startRelease date not null,--дата начала проката
+endRelease date not null,-- дата окончания проката
+description varchar(500) not null,-- описание
+ageLimit int not null,--возрастное ограничение
+IDGenre int not null,--жанр
+foreign key (IDGenre)
+  references Genre(ID) ,
+img Bytea not null 
+);
+
+
+
+--table Session
+create table Session
+(
+ID int  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+dateSession date not null,--дата сеанса
+timeSession time(6) not null,--время сеанса
+IDHall int not null,--зал
+foreign key (IDHall)
+  references Hall(ID) on delete cascade,
+IDFilm int not null,--фильм
+foreign key (IDFilm)
+  references Film(ID) on delete cascade,
+  status varchar(10)  DEFAULT 'Active'
+);
+
+--table Ticket
+create table Ticket
+(
+ID int  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+IDSession int not null,--иддентификатор сеаанса
+foreign key (IDSession)
+  references Session(ID) on delete cascade,
+IDPlace int not null,--иентификатор места
+foreign key (IDPlace)
+  references Place(ID) on delete no action,
+  IDUsers int not null,--идентификатор пользователя
+foreign key (IDUsers)
+  references Users(ID) on delete cascade,
+    CONSTRAINT unique_constraint_name UNIQUE (IDSession, IDPlace)
+ );create table Favorite
+(
+ID int  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+IDUsers int not null,--идентификатор пользователя
+foreign key (IDUsers)
+  references Users(ID) on delete cascade,
+IDFilm int not null,--фильм
+foreign key (IDFilm)
+  references Film(ID) on delete cascade
+);
+CREATE TABLE AUDITT 
+( 
+OperationType varchar(100), 
+filmname varchar(100), 
+date date, 
+datenow date, 
+place varchar(100), 
+users varchar(100) 
+)

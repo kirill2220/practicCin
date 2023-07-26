@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model auditt {
+    id      Int   @id @default(autoincrement())
+  operationtype String?   @db.VarChar(100)
+  filmname      String?   @db.VarChar(100)
+  date          DateTime? @db.Date
+  datenow       DateTime? @db.Date
+  place         String?   @db.VarChar(100)
+  users         Int
+ users_audit   users @relation(fields: [users], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model favorite {
+  id      Int   @id @default(autoincrement())
+  idusers Int
+  idfilm  Int
+  film    film  @relation(fields: [idfilm], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users   users @relation(fields: [idusers], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model film {
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(50)
+  year         Int
+  duration     DateTime   @db.Time(6)
+  startrelease DateTime   @db.Date
+  endrelease   DateTime   @db.Date
+  description  String     @db.VarChar(500)
+  agelimit     Int
+  idgenre      Int
+  img          Bytes
+  favorite     favorite[]
+  genre        genre      @relation(fields: [idgenre], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  session      session[]
+}
+
+model genre {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(50)
+  film film[]
+}
+
+model hall {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(50)
+  count_rows    Int
+  count_place   Int
+  id_type_plase Int
+  typeplace     typeplace @relation(fields: [id_type_plase], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  place         place[]
+  session       session[]
+}
+
+model place {
+  id     Int      @id @default(autoincrement())
+  place  Int
+  idhall Int
+  hall   hall     @relation(fields: [idhall], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ticket ticket[]
+}
+
+model session {
+  id          Int      @id @default(autoincrement())
+  datesession DateTime @db.Date
+  timesession DateTime @db.Time(6)
+  idhall      Int
+  idfilm      Int
+  status      String?  @default("Active") @db.VarChar(10)
+  film        film     @relation(fields: [idfilm], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  hall        hall     @relation(fields: [idhall], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ticket      ticket[]
+}
+
+model ticket {
+  id        Int     @id @default(autoincrement())
+  idsession Int
+  idplace   Int
+  idusers   Int
+  place     place   @relation(fields: [idplace], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  session   session @relation(fields: [idsession], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users     users   @relation(fields: [idusers], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model token {
+  id      Int    @id @default(autoincrement())
+  idusers Int
+  token   String @db.VarChar(500)
+  users   users  @relation(fields: [idusers], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model typeplace {
+  id          Int    @id @default(autoincrement())
+  cost_vip    Int
+  cost_normal Int
+  hall        hall[]
+}
+
+model users {
+  id                         Int        @id @default(autoincrement())
+  login                      String?    @db.VarChar(50)
+  password                   String?    @db.VarChar(255)
+  name                       String     @db.VarChar(50)
+  email                      String     @db.VarChar(50)
+  status                     String?    @default("User") @db.VarChar(50)
+  auditt_auditt_usersTousers auditt[]   
+  favorite                   favorite[]
+  ticket                     ticket[]
+  token                      token[]
+}
